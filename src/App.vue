@@ -1,37 +1,46 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 
+// 後端 WebSocket server 的位址，port 要跟 socket-server/server.js 裡的 PORT 一致
 const WS_URL = 'ws://localhost:8080'
 
-const status = ref('連線中...')
-const messages = ref([])
-const input = ref('')
-let ws = null
+const status = ref('連線中...')   // 顯示目前的連線狀態
+const messages = ref([])          // 收到的所有訊息（畫面上的訊息列表）
+const input = ref('')             // 輸入框目前打的文字，跟 <input> 雙向綁定
+let ws = null                     // WebSocket 連線實例，不需要響應式，用一般變數即可
 
+// 送出訊息：把輸入框內容透過 WebSocket 送給 server
 function sendMessage() {
   const text = input.value.trim()
+  // 沒有輸入內容，或連線還沒建立好，就不送出
   if (!text || !ws || ws.readyState !== WebSocket.OPEN) return
   ws.send(text)
   input.value = ''
 }
 
+// 元件掛載時建立 WebSocket 連線，並註冊各種事件的處理方式
 onMounted(() => {
   ws = new WebSocket(WS_URL)
 
+  // 連線成功建立
   ws.onopen = () => {
     status.value = '已連線'
   }
+  // 連線關閉（server 關閉、網路中斷等）
   ws.onclose = () => {
     status.value = '連線已中斷'
   }
+  // 連線發生錯誤
   ws.onerror = () => {
     status.value = '連線錯誤'
   }
+  // 收到 server 傳來的訊息（自己送出的訊息，server 廣播回來也會觸發這裡）
   ws.onmessage = (event) => {
     messages.value.push(event.data)
   }
 })
 
+// 元件卸載前（例如切換頁面）主動關閉連線，避免殘留連線占用資源
 onBeforeUnmount(() => {
   ws?.close()
 })
