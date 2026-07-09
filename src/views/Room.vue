@@ -40,7 +40,10 @@ onMounted(() => {
   }
   // 收到 server 傳來的訊息（自己送出的訊息，server 廣播回來也會觸發這裡）
   ws.onmessage = (event) => {
-    messages.value.push(event.data)
+    console.log(1111 ,JSON.parse(event.data))
+    for(const msg of JSON.parse(event.data)) {
+      messages.value.push(msg)
+    }
   }
 })
 
